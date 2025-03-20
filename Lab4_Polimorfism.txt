@@ -1,0 +1,134 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <fstream>
+using namespace std;
+
+class IRezervare {
+public:
+    virtual int calculeazaDurata() const = 0;
+    virtual double calculeazaPret() const = 0;
+    virtual string getTipRezervare() const = 0;
+    virtual string getNumeClient() const = 0;
+    virtual string getDataOraRezervare() const = 0;
+    virtual int getNrPersoane() const = 0;
+    virtual ~IRezervare() {}
+};
+
+class Rezervare : public IRezervare {
+protected:
+    string numeClient;
+    string dataOraRezervare;
+    int nrPersoane;
+
+public:
+    Rezervare(string nume, string dataOra, int nrPers)
+        : numeClient(nume), dataOraRezervare(dataOra), nrPersoane(nrPers) {}
+
+    string getNumeClient() const override { return numeClient; }
+    string getDataOraRezervare() const override { return dataOraRezervare; }
+    int getNrPersoane() const override { return nrPersoane; }
+};
+
+class RezervareZilnica : public Rezervare {
+public:
+    RezervareZilnica(string nume, string dataOra, int nrPers)
+        : Rezervare(nume, dataOra, nrPers) {}
+
+    double calculeazaPret() const override {
+        return nrPersoane <= 2 ? 50.0 : 50.0 + (nrPersoane - 2) * 20.0;
+    }
+
+    int calculeazaDurata() const override { return 2; }
+    string getTipRezervare() const override { return "Rezervare Zilnica"; }
+};
+
+class RezervareEvenimentSpecial : public Rezervare {
+private:
+    int durataOraSuplimentara;
+
+public:
+    RezervareEvenimentSpecial(string nume, string dataOra, int nrPers, int oraSuplimentara)
+        : Rezervare(nume, dataOra, nrPers), durataOraSuplimentara(oraSuplimentara) {}
+
+    double calculeazaPret() const override {
+        return 200.0 + durataOraSuplimentara * 50.0;
+    }
+
+    int calculeazaDurata() const override { return 4 + durataOraSuplimentara; }
+    string getTipRezervare() const override { return "Rezervare Eveniment Special"; }
+};
+
+class RezervareGrupMare : public Rezervare {
+public:
+    RezervareGrupMare(string nume, string dataOra, int nrPers)
+        : Rezervare(nume, dataOra, nrPers) {}
+
+    double calculeazaPret() const override {
+        return nrPersoane <= 20 ? 500.0 : 500.0 + (nrPersoane - 20) * 10.0;
+    }
+
+    int calculeazaDurata() const override { return 3; }
+    string getTipRezervare() const override { return "Rezervare Grup Mare"; }
+};
+
+class RezervareVIP : public Rezervare {
+private:
+    double costFacilitatiSpeciale;
+
+public:
+    RezervareVIP(string nume, string dataOra, int nrPers, double costFacilitati)
+        : Rezervare(nume, dataOra, nrPers), costFacilitatiSpeciale(costFacilitati) {}
+
+    double calculeazaPret() const override {
+        return 1000.0 + costFacilitatiSpeciale;
+    }
+
+    int calculeazaDurata() const override { return 4; }
+    string getTipRezervare() const override { return "Rezervare VIP"; }
+};
+
+int main() {
+    vector<IRezervare*> rezervari;
+
+    ifstream fisier("rezervari.txt");
+    if (fisier.is_open()) {
+        string tipRezervare, numeClient, dataOraRezervare;
+        int nrPersoane, oraSuplimentara;
+        double costFacilitatiSpeciale;
+
+        while (fisier >> tipRezervare) {
+            if (tipRezervare == "RezervareZilnica") {
+                fisier >> numeClient >> dataOraRezervare >> nrPersoane;
+                rezervari.push_back(new RezervareZilnica(numeClient, dataOraRezervare, nrPersoane));
+            } else if (tipRezervare == "RezervareEvenimentSpecial") {
+                fisier >> numeClient >> dataOraRezervare >> nrPersoane >> oraSuplimentara;
+                rezervari.push_back(new RezervareEvenimentSpecial(numeClient, dataOraRezervare, nrPersoane, oraSuplimentara));
+            } else if (tipRezervare == "RezervareGrupMare") {
+                fisier >> numeClient >> dataOraRezervare >> nrPersoane;
+                rezervari.push_back(new RezervareGrupMare(numeClient, dataOraRezervare, nrPersoane));
+            } else if (tipRezervare == "RezervareVIP") {
+                fisier >> numeClient >> dataOraRezervare >> nrPersoane >> costFacilitatiSpeciale;
+                rezervari.push_back(new RezervareVIP(numeClient, dataOraRezervare, nrPersoane, costFacilitatiSpeciale));
+            }
+        }
+        fisier.close();
+    }
+
+    for (size_t i = 0; i < rezervari.size(); i++) {
+        IRezervare* rezerv = rezervari[i];
+        cout << "Tip Rezervare: " << rezerv->getTipRezervare() << endl;
+        cout << "Nume Client: " << rezerv->getNumeClient() << endl;
+        cout << "Data si Ora Rez.: " << rezerv->getDataOraRezervare() << endl;
+        cout << "Numar Pers.: " << rezerv->getNrPersoane() << endl;
+        cout << "Durata: " << rezerv->calculeazaDurata() << " ore" << endl;
+        cout << "Pret Total: " << rezerv->calculeazaPret() << " lei" << endl;
+        cout << endl;
+    }
+
+    for (auto& rezerv : rezervari) {
+        delete rezerv;
+    }
+
+    return 0;
+}
